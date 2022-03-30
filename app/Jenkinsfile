@@ -1,0 +1,61 @@
+pipeline{
+	agent any 
+	tools	{
+		maven 'maven'
+		dockerTool 'docker'
+		}	
+		stages{
+			stage('git-clone') {
+				steps{
+					checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'jenkins', url: 'https://github.com/Arise-Atongwe/spring-boot-docker.git']]])
+				}
+			}
+			stage('code validation'){
+				steps{
+				sh 'mvn validate'
+				}
+			}
+			stage('code compile'){
+				steps{
+				sh 'mvn compile'
+				}
+			}
+			stage('code test'){
+				steps{
+				sh 'mvn test'
+				}
+			}
+			stage('code package'){
+				steps{
+				sh 'mvn clean package' // -DskipTests=true'
+				}
+			}
+			stage('Unit Tests - JUnit and JaCoCo'){
+				steps{
+					sh 'mvn test'
+					sh 'mvn -v'
+				}
+//				post{
+//					always{
+//						junit'target/surefire-reports/*.xml'
+//						jacoco execPattern: 'target/jacoco.exec'
+//					}
+//				}
+			}
+			stage('Build Docker Image'){
+				steps{
+				withDockerRegistry(credentialsId: 'dockerHubcredentials2', url: 'https://hub.docker.com/repository/docker/jamaweh/springboot-mongo') {
+				sh 'docker build -t jamaweh/springboot-mongo:""$GIT_COMMIT"" .'
+				sh 'docker push jamaweh/springboot-mongo:""$GIT_COMMIT"" .'
+				}
+					
+			}
+  		}
+	}
+} 
+© 2022 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Docs
